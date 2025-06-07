@@ -1,24 +1,51 @@
-import { HttpStatus, Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { HttpStatus, Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { CreateOrderDto } from './dto/create-order.dto';
-import { Order, PrismaClient } from 'generated/prisma';
-import { RpcException } from '@nestjs/microservices';
+import { PrismaClient } from 'generated/prisma';
+import { ClientProxy, RpcException } from '@nestjs/microservices';
 import { OrderPaginationDto } from './dto';
 import { ChangeOrderStatusDto } from './dto/change-order-status.dto';
+import { RESERVATION_SERVICE } from 'src/config';
+import { firstValueFrom } from 'rxjs';
 
 
 @Injectable()
-export class OrdersService extends PrismaClient implements OnModuleInit{
+export class OrdersService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger('OrdersService');
+
+  constructor(
+    @Inject(RESERVATION_SERVICE) private readonly reservationClient: ClientProxy,
+  ) {
+    super();
+  }
 
   async onModuleInit() {
     await this.$connect();
     this.logger.log('Database connection established');
   }
 
-  create(createOrderDto: CreateOrderDto) {
-    return this.order.create({
-      data: createOrderDto,
-    });
+  async create(createOrderDto: CreateOrderDto) {
+
+    try {
+      const reservationIds = createOrderDto.items.map(item => item.reservationId);
+
+      const reservation = await firstValueFrom(
+        this.reservationClient.send({ cmd: 'validate_reservation' }, reservationIds)
+      )
+
+      // Todo: implementar cuando se tenga Flight-ms
+      // const totalAmount = createOrderDto.items.reduce( (acc, orderItem) => {
+      //   const item = reservation.find
+      // })
+      return reservation;
+    } catch (error) {
+      throw new RpcException({
+        status: HttpStatus.BAD_REQUEST,
+        message: 'Error validating reservation',
+      });
+    }
+
+
+
   }
 
   async findAll(orderPaginationDto: OrderPaginationDto) {
@@ -62,7 +89,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit{
     return order;
   }
 
-  async changeStatus( changeOrderStatusDto: ChangeOrderStatusDto){
+  async changeStatus(changeOrderStatusDto: ChangeOrderStatusDto) {
     const { id, status } = changeOrderStatusDto;
 
     const order = await this.findOne(id);
