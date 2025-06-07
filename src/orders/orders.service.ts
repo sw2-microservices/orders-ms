@@ -13,7 +13,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
   private readonly logger = new Logger('OrdersService');
 
   constructor(
-    @Inject(RESERVATION_SERVICE) private readonly reservationClient: ClientProxy,
+    //@Inject(RESERVATION_SERVICE) private readonly reservationClient: ClientProxy,
   ) {
     super();
   }
@@ -25,24 +25,25 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
 
   async create(createOrderDto: CreateOrderDto) {
 
-    try {
-      const reservationIds = createOrderDto.items.map(item => item.reservationId);
+    //todo: aplicar cuando se tenga flight ya que tiene el atributo price
+    // try {
+    //   const reservationIds = createOrderDto.items.map(item => item.reservationId);
 
-      const reservation = await firstValueFrom(
-        this.reservationClient.send({ cmd: 'validate_reservation' }, reservationIds)
-      )
+    //   const reservation = await firstValueFrom(
+    //     this.reservationClient.send({ cmd: 'validate_reservation' }, reservationIds)
+    //   )
 
-      // Todo: implementar cuando se tenga Flight-ms
-      // const totalAmount = createOrderDto.items.reduce( (acc, orderItem) => {
-      //   const item = reservation.find
-      // })
-      return reservation;
-    } catch (error) {
-      throw new RpcException({
-        status: HttpStatus.BAD_REQUEST,
-        message: 'Error validating reservation',
-      });
-    }
+    //   // Todo: implementar cuando se tenga Flight-ms
+    //   // const totalAmount = createOrderDto.items.reduce( (acc, orderItem) => {
+    //   //   const item = reservation.find
+    //   // })
+    //   return reservation;
+    // } catch (error) {
+    //   throw new RpcException({
+    //     status: HttpStatus.BAD_REQUEST,
+    //     message: 'Error validating reservation',
+    //   });
+    // }
 
 
 
